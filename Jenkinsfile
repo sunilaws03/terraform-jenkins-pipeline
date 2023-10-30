@@ -7,15 +7,15 @@ pipeline {
     }
 
     environment {
-        AWS_ACCESS_KEY_ID     = credentials('aws-access-key-id')
-        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
-        AWS_DEFAULT_REGION    = 'ap-south-1'
+        AWS_ACCESS_KEY_ID     = credentials('AWS_ACCESS_KEY_ID')
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+   
     }
 
     stages {
         stage('Checkout') {
             steps {
-               git branch: 'main', credentialsId: 'c8070803-659f-493d-9c3f-ede7f2f00d12', url: 'https://github.com/sunilaws03/terraform-jenkins-pipeline.git'
+               git branch: 'main', credentialsId: 'c8070803-659f-493d-9c3f-ede7f2f00d12', url: 'https://github.com/sunilaws03/terraform-jenkins-pipeline-1.git'
             }
         }
         stage('Terraform init') {
@@ -23,31 +23,28 @@ pipeline {
                 sh 'terraform init'
             }
         }
-        stage('Plan') {
+        stage('Terraform Plan') {
             steps {
-                sh 'terraform plan -out tfplan'
-                sh 'terraform show -no-color tfplan > tfplan.txt'
+                
+                sh 'terraform plan -no-color -out=create.tfplan'
+               
             }
         }
         stage('Apply / Destroy') {
             steps {
-                script {
-                    if (params.action == 'apply') {
-                        if (!params.autoApprove) {
-                            def plan = readFile 'tfplan.txt'
-                            input message: "Do you want to apply the plan?",
-                            parameters: [text(name: 'Plan', description: 'Please review the plan', defaultValue: plan)]
-                        }
+               sh 'echo "comienza"'
+            script{  
+                if (params.action == 'destroy'){
+                        
+                         sh 'terraform ${action} --auto-approve'
+                } else {
+                                          
+                         sh 'terraform apply -refresh=true -auto-approve'
+                           
+                }  
 
-                        sh 'terraform ${action} -input=false tfplan'
-                    } else if (params.action == 'destroy') {
-                        sh 'terraform ${action} --auto-approve'
-                    } else {
-                        error "Invalid action selected. Please choose either 'apply' or 'destroy'."
-                    }
-                }
             }
-        }
-
+         } 
     }
+}
 }
